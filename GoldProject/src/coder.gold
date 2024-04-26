@@ -1,0 +1,265 @@
+using gold.**
+// -----------------------
+// Silvia Takahashi
+// UNIVERSIDAD DE LOS ANDES
+//------------------------------
+// 
+//  
+//  A finite state transducer
+//    Input:   xyz:W'#
+//    where  x y and z are distinct
+//        xyx in Aˆ3
+//     W in A*
+// Output:  xyz:X#
+//  where X is obtained by replacing $ for all occurrences of xyz
+//-----------------------
+//   By default  the alphabet is A  = {'a', 't', 'c'}, it can be changed invoking the program with a string  of symbols. 
+//   A  will contain all the the symbols in the parameter
+//  
+//  
+
+var  Alph 
+var guardados : String 
+
+var Q :ISet
+
+var estadosImpares :ISet
+var estadosTransicionImpares :ISet
+
+var estadosPares1 :ISet
+var estadosPares2 :ISet
+var estadosPares3 :ISet
+var estadosPares4 :ISet
+var estadosPares :ISet
+
+var estadosTransicionPares :ISet
+
+var letritas :ISet
+var simbolitos :ISet
+
+
+chars(string) :=  {string.charAt(i)| 0 <= i <string.length() }
+charsStrings(strings) := (∪ s | s ∈ strings: chars(s) )
+         
+prefixes(string) := {string.substring(0,i)| 1 <= i <= string.length() }
+allPrefixes(strings):= (∪ s | s ∈ strings: prefixes(s) )
+
+
+procedure main(args:String[]) begin
+ 	    
+	if  args.length=0  then  Alph:= { 'a', 'c', 't'}
+	else	
+		Alph := {args[0].charAt(i) |  0 ≤ i < args[0].length()}\{'$','#'}
+    end	
+	
+	T :=createTransducer()
+	print "Estrada para el coder: "	
+	
+	Utilities.test(T)
+	
+    //GAutomataFrame.show(T)
+end
+
+
+function createTransducer():ITransducer begin
+	Ls := {"a","b","c","d"}
+	M1 := {""+a|a∈Ls}
+	M2 := {""+a+b| a∈Ls,b∈Ls}
+	M3 := {""+a+b+c|a∈Ls,b∈Ls,c∈Ls}
+	MF := {s|s∈M1∪ M2∪M3}
+
+	letritas := {"a","b","c","d"}
+	simbolitos := {"!", "#"}
+	
+	estadosImpares := {⟨s,"1"⟩|s∈MF}
+	estadosTransicionImpares := {⟨s,"!"⟩|s∈M3}
+	
+	estadosPares1 := {⟨s,s.substring(0,1)⟩|s∈M3}
+	estadosPares2 := {⟨s,s.substring(0,2)⟩|s∈M3}
+	estadosPares3 := {⟨s,s⟩|s∈M3}	
+	estadosPares4 := {⟨s,"2"⟩|s∈MF}
+	estadosPares = estadosPares1 ∪ estadosPares2 ∪ estadosPares3  ∪ estadosPares4
+	
+	Q := estadosImpares ∪ estadosPares ∪ estadosTransicionImpares  ∪ {"INIT","#", "!2"}  
+	Σ := charsStrings(letritas) ∪ charsStrings(simbolitos)
+	O := Σ ∪ {'*'}
+	q₀ := "INIT"
+	F := Q
+	
+	print Q
+	print Σ
+	
+	return GDeterministicTransducer(Q,Σ,O,q₀,F,δ,imprEstados, imprFlechas)
+end
+
+
+
+function imprEstados(q) begin
+	if q = "#" then 
+		return "#"
+		
+	elseif q = "!2" then
+		return "!"
+	
+	elseif q in estadosTransicionImpares then
+		return "!"
+	
+	elseif q in estadosPares3 then 
+		return "*"
+		
+	elseif q in estadosImpares then 
+		var palabra : String
+		palabra := q[0]
+		
+		if palabra.length() = 3 then 
+			return palabra
+		
+		else 
+			return λ
+		end
+	
+	elseif q in estadosPares4 then 
+		var palabra : String
+		palabra := q[0]
+		
+		if palabra.length() = 3 then 
+			return palabra
+		
+		else 
+			return λ
+		end
+			
+	else 
+		return λ
+	
+	end
+
+
+end
+
+
+
+function imprFlechas(q,σ) begin
+	return λ 
+end
+
+
+
+function δ(q,σ) begin
+	
+	if q = "INIT" then
+		if ""+σ in letritas then 
+			return ⟨""+σ, "1"⟩
+		else return"#"
+		end
+
+	elseif q = "#" then 
+		return "#"
+			
+	elseif q in estadosImpares  then
+		var letras : String
+		letras = q[0]
+		if ""+σ in letritas then 
+			if letras.length() <= 2 then 
+				return ⟨letras + σ, "1"⟩
+			else return"#"
+			end
+			
+		elseif ""+σ = "!" then 
+			if letras.length() == 3 then 
+				return ⟨letras, "!"⟩
+			else return"#"
+			end
+		
+		elseif ""+σ = "#" then 
+			return "#"
+		
+		else return"#"
+		end
+	
+	elseif q in estadosPares  then
+		var letras1 : String
+		var letras2 : String
+		letras1 = q[0]
+		letras2 = q[1]
+		
+		if q in estadosPares4 then
+			if ""+σ in letritas then 
+				if letras1.length() <= 2 then 
+					return ⟨letras1 + σ, "2"⟩
+				else return"#"
+				end
+				
+			elseif ""+σ = "!" then 
+				if letras1.length() == 3 then 
+					return "!2"
+				else return"#"
+				end
+			
+			elseif ""+σ = "#" then 
+				return "#"
+			
+			else return"#"
+			end
+		
+		elseif q in (estadosPares1 ∪ estadosPares2 ∪ estadosPares3) then
+			
+			if ""+σ in letritas then 
+				if letras2.length() <= 2 then 
+					if ⟨letras1, letras2 + σ⟩ in Q  then
+						return ⟨letras1, letras2 + σ⟩				
+					else
+						return ⟨letras2 + σ, "2"⟩		
+					end
+					
+				else return"#"
+				end
+				
+			elseif ""+σ = "!" then 
+				if letras2.length() == 3 && ⟨letras1, letras2⟩ in Q then 
+					return "!2"
+				else return"#"
+				end
+			
+			elseif ""+σ = "#" then 
+				return "#"
+			
+			else return"#"
+			end
+		
+		else return "#"
+		end
+	
+	
+	elseif q in estadosTransicionImpares then	
+		var letras : String
+		letras = q[0]
+
+		if ""+σ in letritas then
+			if ⟨ letras, ""+σ ⟩ in Q then
+				return ⟨ letras, ""+σ ⟩
+				
+			else
+				return ⟨ ""+σ, "2" ⟩
+			end
+			
+		else return"#"
+		end
+		
+	elseif q = "!2" then
+		if ""+σ in letritas then 
+			return ⟨ ""+σ, "1" ⟩
+		else return"#"
+		end
+		
+	else return "#"
+		
+	end
+		
+	
+end
+
+
+
+
+ 
